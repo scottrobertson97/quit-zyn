@@ -6,6 +6,7 @@ export type Trigger =
   | 'focus'
   | 'driving'
   | 'after_food'
+  | 'habit_autopilot'
   | 'social'
   | 'morning'
   | 'night'

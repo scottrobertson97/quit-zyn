@@ -6,6 +6,7 @@ export const triggerLabels: Record<Trigger, string> = {
   focus: 'Focus',
   driving: 'Driving',
   after_food: 'After food',
+  habit_autopilot: 'Habit/autopilot',
   social: 'Social',
   morning: 'Morning',
   night: 'Night',

@@ -24,6 +24,7 @@ import { PlanScreen } from '../features/plan/PlanScreen'
 import { InsightsScreen } from '../features/insights/InsightsScreen'
 import { JournalScreen } from '../features/journal/JournalScreen'
 import { SettingsScreen } from '../features/settings/SettingsScreen'
+import { DefenseFlow } from '../features/danger-windows/components/DefenseFlow'
 import { Button } from '../components/Button'
 
 const navigationItems = [
@@ -86,6 +87,10 @@ export function App() {
           <Route path="/insights" element={<InsightsScreen />} />
           <Route path="/journal" element={<JournalScreen />} />
           <Route path="/settings" element={<SettingsScreen />} />
+          <Route
+            path="/danger-windows/:id/defense"
+            element={<DefenseFlow />}
+          />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

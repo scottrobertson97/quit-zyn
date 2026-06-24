@@ -1,15 +1,28 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from './App'
 import { usePouchlessStore } from './store'
 import { addCravingLog } from '../data/repositories/cravingLogRepository'
+import {
+  addDangerWindowCheckIn,
+  saveDangerWindow,
+} from '../data/repositories/dangerWindowRepository'
 import { saveSettings } from '../data/repositories/settingsRepository'
-import { makeSettings, renderWithRouter, resetTestData } from '../test/testUtils'
+import {
+  makeDangerWindow,
+  makeSettings,
+  renderWithRouter,
+  resetTestData,
+} from '../test/testUtils'
 
 describe('Pouchless app flows', () => {
   beforeEach(async () => {
     await resetTestData()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('completes onboarding and routes to Today', async () => {
@@ -111,6 +124,110 @@ describe('Pouchless app flows', () => {
     await waitFor(() =>
       expect(usePouchlessStore.getState().settings?.dailyLimit).toBe(3),
     )
+  })
+
+  it('creates a danger window from the plan screen', async () => {
+    const user = userEvent.setup()
+    await saveSettings(makeSettings())
+
+    renderWithRouter(<App />, '/plan')
+
+    expect(await screen.findByText('Danger Windows')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /^create$/i }))
+    await user.type(screen.getByLabelText(/^label$/i), 'Afternoon Crash')
+    await user.click(
+      screen.getByRole('button', { name: /create danger window/i }),
+    )
+
+    expect(await screen.findByText('Afternoon Crash')).toBeInTheDocument()
+    expect(usePouchlessStore.getState().dangerWindows[0]).toMatchObject({
+      label: 'Afternoon Crash',
+      goal: 'delay_first',
+      defenseAction: 'walk',
+      isActive: true,
+    })
+  })
+
+  it('shows a pending danger window check-in and saves the outcome', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 5, 24, 16, 30))
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    await saveSettings(makeSettings())
+    await saveDangerWindow(
+      makeDangerWindow({
+        daysOfWeek: [3],
+        startTime: '14:00',
+        endTime: '16:00',
+      }),
+    )
+
+    renderWithRouter(<App />, '/today')
+
+    expect(await screen.findByText('Danger Window Complete')).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: /i delayed but used later/i }),
+    )
+    await user.click(screen.getByRole('button', { name: /save check-in/i }))
+
+    await waitFor(() =>
+      expect(usePouchlessStore.getState().dangerWindowCheckIns[0]).toMatchObject({
+        dangerWindowId: 'danger-window',
+        outcome: 'delayed',
+      }),
+    )
+  })
+
+  it('starts a danger window defense flow from Today', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 5, 24, 14, 30))
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    await saveSettings(makeSettings())
+    await saveDangerWindow(
+      makeDangerWindow({
+        daysOfWeek: [3],
+        startTime: '14:00',
+        endTime: '16:00',
+      }),
+    )
+
+    renderWithRouter(<App />, '/today')
+
+    expect(await screen.findByText('Active Danger Window')).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: /start defense/i }))
+
+    expect(await screen.findByText('Defense: Walk')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /start 5-minute timer/i }))
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(await screen.findByText('4:59')).toBeInTheDocument()
+  })
+
+  it('shows danger window stats in Insights', async () => {
+    await saveSettings(makeSettings())
+    await saveDangerWindow(makeDangerWindow())
+    await addDangerWindowCheckIn({
+      id: 'protected-checkin',
+      dangerWindowId: 'danger-window',
+      windowStartAt: new Date(2026, 5, 23, 14).toISOString(),
+      windowEndAt: new Date(2026, 5, 23, 16).toISOString(),
+      checkedInAt: new Date(2026, 5, 23, 16, 5).toISOString(),
+      outcome: 'protected',
+    })
+    await addDangerWindowCheckIn({
+      id: 'used-checkin',
+      dangerWindowId: 'danger-window',
+      windowStartAt: new Date(2026, 5, 24, 14).toISOString(),
+      windowEndAt: new Date(2026, 5, 24, 16).toISOString(),
+      checkedInAt: new Date(2026, 5, 24, 16, 5).toISOString(),
+      outcome: 'used',
+    })
+
+    renderWithRouter(<App />, '/insights')
+
+    expect(await screen.findByText('Protection rate')).toBeInTheDocument()
+    expect(screen.getByText('50%')).toBeInTheDocument()
+    expect(screen.getAllByText('Work Crash')).toHaveLength(2)
+    expect(screen.getByText('Take a walk')).toBeInTheDocument()
   })
 
   it('shows useful insight empty states', async () => {

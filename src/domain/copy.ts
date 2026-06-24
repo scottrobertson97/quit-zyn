@@ -32,6 +32,8 @@ export function suggestIntervention(
       return 'gum'
     case 'after_food':
       return 'brush_teeth'
+    case 'habit_autopilot':
+      return 'delay_timer'
     case 'social':
       return 'message_someone'
     case 'morning':

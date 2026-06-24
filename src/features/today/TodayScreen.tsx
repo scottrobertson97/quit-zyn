@@ -17,6 +17,7 @@ import {
 import { formatTimeOfDay } from '../../domain/date'
 import { supportiveMessages } from '../../domain/copy'
 import { triggerLabels } from '../../domain/constants'
+import { DangerWindowTodaySection } from '../danger-windows/components/DangerWindowTodaySection'
 
 export function TodayScreen() {
   const settings = usePouchlessStore((state) => state.settings)
@@ -88,6 +89,8 @@ export function TodayScreen() {
           </div>
         </div>
       </Card>
+
+      <DangerWindowTodaySection />
 
       <div className="grid gap-3 sm:grid-cols-3">
         <MetricCard label="Pouches avoided" value={avoided} />

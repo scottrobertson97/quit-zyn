@@ -1,5 +1,14 @@
 import { create } from 'zustand'
-import type { CravingLog, JournalEntry, PouchLog, UserSettings } from '../domain/types'
+import type {
+  CravingLog,
+  JournalEntry,
+  PouchLog,
+  UserSettings,
+} from '../domain/types'
+import type {
+  DangerWindow,
+  DangerWindowCheckIn,
+} from '../features/danger-windows/types'
 import { getSettings, saveSettings } from '../data/repositories/settingsRepository'
 import {
   addPouchLog,
@@ -14,6 +23,12 @@ import {
   addJournalEntry,
   getAllJournalEntries,
 } from '../data/repositories/journalRepository'
+import {
+  addDangerWindowCheckIn,
+  getAllDangerWindowCheckIns,
+  getAllDangerWindows,
+  saveDangerWindow,
+} from '../data/repositories/dangerWindowRepository'
 import { resetAllData } from '../data/repositories/resetRepository'
 
 type PouchlessState = {
@@ -23,6 +38,8 @@ type PouchlessState = {
   pouchLogs: PouchLog[]
   cravingLogs: CravingLog[]
   journalEntries: JournalEntry[]
+  dangerWindows: DangerWindow[]
+  dangerWindowCheckIns: DangerWindowCheckIn[]
   initialize: () => Promise<void>
   refresh: () => Promise<void>
   saveSettings: (settings: UserSettings) => Promise<void>
@@ -30,6 +47,8 @@ type PouchlessState = {
   addCravingLog: (log: CravingLog) => Promise<void>
   updateCravingLog: (log: CravingLog) => Promise<void>
   addJournalEntry: (entry: JournalEntry) => Promise<void>
+  saveDangerWindow: (window: DangerWindow) => Promise<void>
+  addDangerWindowCheckIn: (checkIn: DangerWindowCheckIn) => Promise<void>
   resetAll: () => Promise<void>
 }
 
@@ -39,6 +58,8 @@ export const usePouchlessStore = create<PouchlessState>()((set, get) => ({
   pouchLogs: [],
   cravingLogs: [],
   journalEntries: [],
+  dangerWindows: [],
+  dangerWindowCheckIns: [],
 
   initialize: async () => {
     try {
@@ -54,12 +75,21 @@ export const usePouchlessStore = create<PouchlessState>()((set, get) => ({
   },
 
   refresh: async () => {
-    const [settings, pouchLogs, cravingLogs, journalEntries] =
+    const [
+      settings,
+      pouchLogs,
+      cravingLogs,
+      journalEntries,
+      dangerWindows,
+      dangerWindowCheckIns,
+    ] =
       await Promise.all([
         getSettings(),
         getAllPouchLogs(),
         getAllCravingLogs(),
         getAllJournalEntries(),
+        getAllDangerWindows(),
+        getAllDangerWindowCheckIns(),
       ])
 
     set({
@@ -67,6 +97,8 @@ export const usePouchlessStore = create<PouchlessState>()((set, get) => ({
       pouchLogs,
       cravingLogs,
       journalEntries,
+      dangerWindows,
+      dangerWindowCheckIns,
       storageError: undefined,
     })
   },
@@ -100,6 +132,27 @@ export const usePouchlessStore = create<PouchlessState>()((set, get) => ({
     set((state) => ({ journalEntries: [entry, ...state.journalEntries] }))
   },
 
+  saveDangerWindow: async (window) => {
+    await saveDangerWindow(window)
+    set((state) => {
+      const exists = state.dangerWindows.some((item) => item.id === window.id)
+      return {
+        dangerWindows: exists
+          ? state.dangerWindows.map((item) =>
+              item.id === window.id ? window : item,
+            )
+          : [...state.dangerWindows, window],
+      }
+    })
+  },
+
+  addDangerWindowCheckIn: async (checkIn) => {
+    await addDangerWindowCheckIn(checkIn)
+    set((state) => ({
+      dangerWindowCheckIns: [checkIn, ...state.dangerWindowCheckIns],
+    }))
+  },
+
   resetAll: async () => {
     await resetAllData()
     set({
@@ -107,6 +160,8 @@ export const usePouchlessStore = create<PouchlessState>()((set, get) => ({
       pouchLogs: [],
       cravingLogs: [],
       journalEntries: [],
+      dangerWindows: [],
+      dangerWindowCheckIns: [],
     })
   },
 }))

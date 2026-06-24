@@ -13,6 +13,7 @@ import {
   getPouchesUsedThisWeek,
 } from '../../domain/insightEngine'
 import { triggerLabels } from '../../domain/constants'
+import { DangerWindowStats } from '../danger-windows/components/DangerWindowStats'
 
 const riskWindowLabels = {
   morning: 'Morning',
@@ -24,6 +25,10 @@ const riskWindowLabels = {
 export function InsightsScreen() {
   const pouchLogs = usePouchlessStore((state) => state.pouchLogs)
   const cravingLogs = usePouchlessStore((state) => state.cravingLogs)
+  const dangerWindows = usePouchlessStore((state) => state.dangerWindows)
+  const dangerWindowCheckIns = usePouchlessStore(
+    (state) => state.dangerWindowCheckIns,
+  )
   const totalEvents = pouchLogs.length + cravingLogs.length
   const mostCommonTrigger = getMostCommonTrigger(cravingLogs, pouchLogs)
   const riskWindow = getHighestRiskTimeWindow(cravingLogs, pouchLogs)
@@ -97,6 +102,11 @@ export function InsightsScreen() {
           </div>
         )}
       </Card>
+
+      <DangerWindowStats
+        windows={dangerWindows}
+        checkIns={dangerWindowCheckIns}
+      />
     </div>
   )
 }

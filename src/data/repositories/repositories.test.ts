@@ -9,6 +9,13 @@ import {
   updateCravingLog,
 } from './cravingLogRepository'
 import { addJournalEntry, getAllJournalEntries } from './journalRepository'
+import {
+  addDangerWindowCheckIn,
+  getAllDangerWindowCheckIns,
+  getAllDangerWindows,
+  saveDangerWindow,
+} from './dangerWindowRepository'
+import { makeDangerWindow } from '../../test/testUtils'
 
 describe('repositories', () => {
   beforeEach(async () => {
@@ -52,10 +59,23 @@ describe('repositories', () => {
       relatedCravingId: 'craving',
     })
 
+    await saveDangerWindow(makeDangerWindow())
+
+    await addDangerWindowCheckIn({
+      id: 'danger-checkin',
+      dangerWindowId: 'danger-window',
+      windowStartAt: new Date(2026, 5, 24, 14).toISOString(),
+      windowEndAt: new Date(2026, 5, 24, 16).toISOString(),
+      checkedInAt: new Date(2026, 5, 24, 16, 5).toISOString(),
+      outcome: 'protected',
+    })
+
     expect(await getSettings()).toEqual(settings)
     expect(await getAllPouchLogs()).toHaveLength(1)
     expect((await getAllCravingLogs())[0].outcome).toBe('skipped')
     expect((await getAllJournalEntries())[0].relatedCravingId).toBe('craving')
+    expect((await getAllDangerWindows())[0].label).toBe('Work Crash')
+    expect((await getAllDangerWindowCheckIns())[0].outcome).toBe('protected')
   })
 
   it('surfaces IndexedDB failures to callers', async () => {

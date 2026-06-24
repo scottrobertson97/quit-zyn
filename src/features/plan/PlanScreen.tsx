@@ -12,6 +12,7 @@ import {
 } from '../../domain/constants'
 import { getPlanCopy } from '../../domain/copy'
 import type { QuitMode } from '../../domain/types'
+import { DangerWindowManager } from '../danger-windows/components/DangerWindowManager'
 
 const quitModes: QuitMode[] = ['awareness', 'delay', 'taper', 'cold_turkey']
 
@@ -170,6 +171,8 @@ export function PlanScreen() {
         <h2 className="text-xl font-semibold">What this mode means</h2>
         <ModeDetails mode={quitMode} baseline={baseline} />
       </Card>
+
+      <DangerWindowManager />
 
       <p className="rounded-lg bg-teal-50 p-4 text-sm leading-6 text-teal-900">
         {medicalDisclaimer}
