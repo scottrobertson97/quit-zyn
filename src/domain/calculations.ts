@@ -1,6 +1,8 @@
 import { getInclusiveLocalDayCount, isSameLocalDate, toDate } from './date'
 import type { CravingLog, PouchLog, UserSettings } from './types'
 
+export const POUCHES_PER_CAN_FOR_SAVINGS = 15
+
 export type DurationLike = {
   totalMs: number
   hours: number
@@ -92,16 +94,14 @@ export function getEstimatedAvoidedPouches(
 
 export function getEstimatedMoneySaved(
   settings: UserSettings,
-  logs: PouchLog[],
-  now: Date | string = new Date(),
+  cravingLogs: CravingLog[],
 ) {
   if (!settings.costPerCan || settings.costPerCan <= 0) {
     return 0
   }
 
-  const pouchesPerCan = settings.pouchesPerCan || 15
-  const costPerPouch = settings.costPerCan / pouchesPerCan
-  return getEstimatedAvoidedPouches(settings, logs, now) * costPerPouch
+  const costPerPouch = settings.costPerCan / POUCHES_PER_CAN_FOR_SAVINGS
+  return getSkippedCravingCount(cravingLogs) * costPerPouch
 }
 
 export function getSkippedCravingCount(cravingLogs: CravingLog[]) {

@@ -3,6 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { App } from './App'
 import { usePouchlessStore } from './store'
+import { addCravingLog } from '../data/repositories/cravingLogRepository'
 import { saveSettings } from '../data/repositories/settingsRepository'
 import { makeSettings, renderWithRouter, resetTestData } from '../test/testUtils'
 
@@ -55,6 +56,43 @@ describe('Pouchless app flows', () => {
 
     expect(await screen.findByText('You created space.')).toBeInTheDocument()
     expect(usePouchlessStore.getState().cravingLogs[0].outcome).toBe('skipped')
+  })
+
+  it('shows savings from skipped cravings on Today', async () => {
+    await saveSettings(makeSettings({ costPerCan: 15 }))
+    await addCravingLog({
+      id: 'skip-one',
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      intensity: 5,
+      trigger: 'stress',
+      outcome: 'skipped',
+    })
+
+    renderWithRouter(<App />, '/today')
+
+    expect(await screen.findByText('Estimated saved')).toBeInTheDocument()
+    expect(await screen.findByText('$1.00')).toBeInTheDocument()
+  })
+
+  it('saves estimated can cost from Settings', async () => {
+    const user = userEvent.setup()
+    await saveSettings(makeSettings({ costPerCan: undefined }))
+
+    renderWithRouter(<App />, '/settings')
+
+    expect(await screen.findByText('Savings estimate')).toBeInTheDocument()
+    const costInput = screen.getByLabelText(/estimated cost per can/i)
+    await user.clear(costInput)
+    await user.type(costInput, '18.75')
+    await user.click(screen.getByRole('button', { name: /save cost/i }))
+
+    expect(
+      await screen.findByText('Savings estimate updated.'),
+    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(usePouchlessStore.getState().settings?.costPerCan).toBe(18.75),
+    )
   })
 
   it('saves plan edits', async () => {

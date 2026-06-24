@@ -32,7 +32,7 @@ export function TodayScreen() {
   const remaining = getRemainingDailyPouches(settings, pouchLogs)
   const sinceLast = getTimeSinceLastPouch(pouchLogs)
   const avoided = getEstimatedAvoidedPouches(settings, pouchLogs)
-  const moneySaved = getEstimatedMoneySaved(settings, pouchLogs)
+  const moneySaved = getEstimatedMoneySaved(settings, cravingLogs)
   const completedCravingsToday = getCravingsForDate(cravingLogs).length
   const recentLogs = pouchLogs.slice(0, 3)
 

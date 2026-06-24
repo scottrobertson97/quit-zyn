@@ -17,7 +17,7 @@ const settings: UserSettings = {
   pouchStrengthMg: 6,
   baselinePouchesPerDay: 4,
   dailyLimit: 2,
-  costPerCan: 10,
+  costPerCan: 15,
   pouchesPerCan: 20,
   onboardingCompleted: true,
   createdAt: new Date(2026, 5, 22, 9).toISOString(),
@@ -47,7 +47,7 @@ describe('calculations', () => {
     expect(getPouchesUsedToday(logs, new Date(2026, 5, 25, 9))).toBe(0)
   })
 
-  it('calculates remaining pouches, avoided pouches, and money saved', () => {
+  it('calculates remaining pouches and avoided pouches', () => {
     const logs = [
       pouch('one', new Date(2026, 5, 23, 8)),
       pouch('two', new Date(2026, 5, 24, 8)),
@@ -59,9 +59,57 @@ describe('calculations', () => {
     expect(
       getEstimatedAvoidedPouches(settings, logs, new Date(2026, 5, 24)),
     ).toBe(10)
+  })
+
+  it('calculates money saved from skipped cravings at 1/15th of a can', () => {
+    const cravings: CravingLog[] = [
+      {
+        id: 'skip-one',
+        startedAt: new Date().toISOString(),
+        intensity: 4,
+        trigger: 'stress',
+        outcome: 'skipped',
+      },
+      {
+        id: 'skip-two',
+        startedAt: new Date().toISOString(),
+        intensity: 5,
+        trigger: 'focus',
+        outcome: 'skipped',
+      },
+      {
+        id: 'skip-three',
+        startedAt: new Date().toISOString(),
+        intensity: 6,
+        trigger: 'boredom',
+        outcome: 'skipped',
+      },
+      {
+        id: 'used',
+        startedAt: new Date().toISOString(),
+        intensity: 7,
+        trigger: 'social',
+        outcome: 'used',
+      },
+      {
+        id: 'waiting',
+        startedAt: new Date().toISOString(),
+        intensity: 3,
+        trigger: 'other',
+        outcome: 'still_waiting',
+      },
+    ]
+
     expect(
-      getEstimatedMoneySaved(settings, logs, new Date(2026, 5, 24)),
-    ).toBe(5)
+      getEstimatedMoneySaved({ ...settings, costPerCan: 15 }, cravings.slice(0, 1)),
+    ).toBe(1)
+    expect(getEstimatedMoneySaved(settings, cravings)).toBe(3)
+    expect(getEstimatedMoneySaved({ ...settings, costPerCan: 0 }, cravings)).toBe(
+      0,
+    )
+    expect(
+      getEstimatedMoneySaved({ ...settings, costPerCan: undefined }, cravings),
+    ).toBe(0)
   })
 
   it('formats time since the last pouch', () => {
